@@ -8,9 +8,8 @@ export function calcularHash(
   hash_anterior: string,
   nonce: number
 ): string {
-  // Concatenamos exactamente los datos que pide el examen
-  const dataString = `${persona_id}${institucion_id}${titulo_obtenido}${fecha_fin}${hash_anterior}${nonce}`;
+  const dataString = `${persona_id}${institucion_id}${titulo_obtenido}${fecha_fin}${hash_anterior}${nonce}`; // Concatenamos todos los datos
   
-  // Generamos y retornamos el hash en formato texto
+  // Generamos y retornamos el hash
   return SHA256(dataString).toString();
 }
