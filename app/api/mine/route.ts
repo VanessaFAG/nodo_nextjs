@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { supabase } from '../../../src/lib/supabase';
 import { calcularHash } from '../../../src/lib/blockchain';
 import { transaccionesPendientes, limpiarMempool } from '../../../src/lib/mempool';
+import { nodosRegistrados } from '../../../src/lib/nodes';
 
 export async function POST() {
   try {
@@ -61,6 +62,16 @@ export async function POST() {
 
     // Limpia las transacción de la Mempool si ya fue minada con éxito
     transaccionesPendientes.shift();
+
+    // Propaga el nuevo bloque a los demás nodos, anunca que lo encontró
+    const bloqueGenerado = nuevoBloque[0];
+    for (const url of Array.from(nodosRegistrados)) {
+      fetch(`${url}/api/blocks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bloqueGenerado)
+      }).catch(() => console.log(`Fallo al propagar bloque al nodo ${url}`));
+    }
 
     return NextResponse.json({
       mensaje: '¡Bloque minado con éxito!',

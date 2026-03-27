@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { transaccionesPendientes } from '../../../src/lib/mempool';
+import { nodosRegistrados } from '../../../src/lib/nodes';
 
 export async function POST(request: Request) {
   try {
@@ -9,10 +10,30 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Faltan datos obligatorios para la transacción' }, { status: 400 });
     }
 
+    // Guarda la transacción localmente
     transaccionesPendientes.push(body);
 
+    if (!body.propagado) {
+      const txParaPropagar = { ...body, propagado: true };
+
+      // Se envia la transacción a los demas nodos, no se espera que respondan
+      for (const url of Array.from(nodosRegistrados)) {
+        try {
+          // Se usa fetch de manera asíncrona para no bloquear nuestro servidor
+          fetch(`${url}/api/transactions`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(txParaPropagar),
+          }).catch(err => console.log(`No se pudo propagar al nodo ${url}`));
+        } catch (e) {
+        }
+      }
+    }
+
     return NextResponse.json({
-      mensaje: 'Transacción agregada a la lista de pendientes exitosamente',
+      mensaje: 'Transacción procesada (y propagada si era nueva)',
       transaccion: body,
       total_pendientes: transaccionesPendientes.length
     }, { status: 201 });
