@@ -1,0 +1,100 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API Nodo Blockchain",
+    "version": "1.0.0",
+    "description": "Documentación del nodo local para la red blockchain distribuida."
+  },
+  "paths": {
+    "/api/chain": {
+      "get": {
+        "summary": "Obtener la cadena de bloques",
+        "description": "Devuelve la cadena completa y su longitud.",
+        "responses": {
+          "200": { "description": "Cadena obtenida exitosamente" }
+        }
+      }
+    },
+    "/api/transactions": {
+      "get": {
+        "summary": "Ver transacciones pendientes",
+        "description": "Devuelve la lista de transacciones en la Mempool.",
+        "responses": {
+          "200": { "description": "Lista de transacciones" }
+        }
+      },
+      "post": {
+        "summary": "Crear nueva transacción",
+        "description": "Agrega un título académico a la Mempool.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "persona_id": { "type": "string" },
+                  "institucion_id": { "type": "string" },
+                  "programa_id": { "type": "string" },
+                  "titulo_obtenido": { "type": "string" },
+                  "fecha_fin": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Transacción agregada" }
+        }
+      }
+    },
+    "/api/mine": {
+      "post": {
+        "summary": "Minar un bloque",
+        "description": "Aplica Proof of Work a la primera transacción pendiente y crea un bloque.",
+        "responses": {
+          "201": { "description": "Bloque minado con éxito" },
+          "400": { "description": "No hay transacciones pendientes" }
+        }
+      }
+    },
+    "/api/nodes/register": {
+      "get": {
+        "summary": "Ver nodos registrados",
+        "description": "Devuelve la lista de nodos en la red local.",
+        "responses": {
+          "200": { "description": "Lista de nodos" }
+        }
+      },
+      "post": {
+        "summary": "Registrar un nodo",
+        "description": "Añade la URL de un compañero a la red.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nodoUrl": { "type": "string", "example": "http://100.85.44.12:8002" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Nodo registrado" }
+        }
+      }
+    },
+    "/api/nodes/resolve": {
+      "get": {
+        "summary": "Resolver conflictos (Consenso)",
+        "description": "Consulta a los demás nodos y adopta la cadena más larga.",
+        "responses": {
+          "200": { "description": "Conflictos resueltos o cadena sincronizada" }
+        }
+      }
+    }
+  }
+}
