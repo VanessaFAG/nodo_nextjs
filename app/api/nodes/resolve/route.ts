@@ -4,56 +4,56 @@ import { nodosRegistrados } from '../../../../src/lib/nodes';
 
 export async function GET() {
   try {
-    // 1. Obtenemos nuestra cadena local para saber su tamaño
-    const { data: cadenaLocal } = await supabase
+    const { data: miCadena, error: errorMiCadena } = await supabase
       .from('grados')
-      .select('*');
-      
-    let maxLongitud = cadenaLocal ? cadenaLocal.length : 0;
+      .select('*')
+      .order('creado_en', { ascending: true });
+
+    if (errorMiCadena) throw errorMiCadena;
+
+    let maxLongitud = miCadena ? miCadena.length : 0;
     let nuevaCadena = null;
 
-    // 2. Le preguntamos a cada compañero registrado por su cadena
-    // Usamos un ciclo for...of para poder usar await en cada petición
     for (const url of Array.from(nodosRegistrados)) {
       try {
         const response = await fetch(`${url}/api/chain`);
-        if (response.ok) {
-          const data = await response.json();
-          
-          // 3. Regla de Consenso: Si su cadena es más larga que la nuestra, la marcamos como la ganadora
-          if (data.longitud > maxLongitud) {
-            maxLongitud = data.longitud;
-            nuevaCadena = data.cadena;
-          }
+        const nodeData = await response.json();
+
+        if (nodeData.length > maxLongitud) {
+          maxLongitud = nodeData.length;
+          nuevaCadena = nodeData.chain;
         }
       } catch (e) {
-        console.log(`El nodo ${url} está apagado o inalcanzable.`);
+        console.log(`No se pudo conectar con el nodo ${url}, lo saltamos.`);
       }
     }
 
-    // 4. Si encontramos una cadena ganadora (más larga), la adoptamos
     if (nuevaCadena) {
-      // Borramos nuestra cadena desactualizada (Supabase requiere un filtro para borrar, usamos not null)
-      await supabase.from('grados').delete().not('id', 'is', null);
-      
-      // Insertamos la cadena ganadora de nuestro compañero
-      const { error } = await supabase.from('grados').insert(nuevaCadena);
-      
-      if (error) throw error;
+      const { error: deleteError } = await supabase
+        .from('grados')
+        .delete()
+        .not('hash_actual', 'is', null);
+
+      if (deleteError) throw deleteError;
+
+      const { error: insertError } = await supabase
+        .from('grados')
+        .insert(nuevaCadena);
+
+      if (insertError) throw insertError;
 
       return NextResponse.json({
-        mensaje: 'Conflictos resueltos: Nuestra cadena fue reemplazada por una más larga',
-        nueva_longitud: maxLongitud
+        mensaje: "Cadena reemplazada por una más larga",
+        cadena: nuevaCadena
       }, { status: 200 });
     }
 
-    // Si nadie tiene una cadena más larga, nos quedamos como estamos
     return NextResponse.json({
-      mensaje: 'Nuestra cadena ya es la más larga o está sincronizada',
-      longitud: maxLongitud
+      mensaje: "Nuestra cadena es la autoridad (no hubo reemplazo)",
+      cadena: miCadena || []
     }, { status: 200 });
 
   } catch (error: any) {
-    return NextResponse.json({ error: 'Error al resolver conflictos: ' + error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Error en el consenso: ' + error.message }, { status: 500 });
   }
 }

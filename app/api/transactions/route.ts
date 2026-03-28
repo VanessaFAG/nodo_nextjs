@@ -6,7 +6,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
 
-    if (!body.persona_id || !body.institucion_id || !body.titulo_obtenido || !body.fecha_fin) {
+    if (!body.persona_id || !body.institucion_id || !body.titulo_obtenido || !body.fecha_inicio || !body.fecha_fin) {
       return NextResponse.json({ error: 'Faltan datos obligatorios para la transacción' }, { status: 400 });
     }
 
@@ -32,21 +32,12 @@ export async function POST(request: Request) {
       }
     }
 
-    return NextResponse.json({
-      mensaje: 'Transacción procesada (y propagada si era nueva)',
-      transaccion: body,
-      total_pendientes: transaccionesPendientes.length
+   return NextResponse.json({
+      mensaje: 'Transacción agregada exitosamente',
+      transaccion: body
     }, { status: 201 });
 
   } catch (error) {
     return NextResponse.json({ error: 'Error al procesar la transacción' }, { status: 500 });
   }
-}
-
-export async function GET() {
-  return NextResponse.json({
-    mensaje: "Transacciones pendientes actuales",
-    total: transaccionesPendientes.length,
-    transacciones: transaccionesPendientes
-  }, { status: 200 });
 }

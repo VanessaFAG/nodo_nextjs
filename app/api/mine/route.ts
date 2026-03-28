@@ -4,14 +4,16 @@ import { calcularHash } from '../../../src/lib/blockchain';
 import { transaccionesPendientes, limpiarMempool } from '../../../src/lib/mempool';
 import { nodosRegistrados } from '../../../src/lib/nodes';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    // Verificar si hay transacciones por minar
+    // 1. Leemos quién está firmando el bloque desde el body
+    const body = await request.json().catch(() => ({}));
+    const firma = body.firmado_por || "nodo-nextjs-3000"; 
+
     if (transaccionesPendientes.length === 0) {
       return NextResponse.json({ error: 'No hay transacciones pendientes para minar' }, { status: 400 });
     }
 
-    // Tomamos la primera transacción del mempool
     const tx = transaccionesPendientes[0];
 
     // Obtiene el último bloque de la cadena para sacar el hash_anterior
@@ -26,7 +28,7 @@ export async function POST() {
 
     let nonce = 0;
     let hashNuevo = '';
-    const dificultad = '00'; 
+    const dificultad = '000'; 
 
     do {
       nonce++;
@@ -48,25 +50,22 @@ export async function POST() {
         institucion_id: tx.institucion_id,
         programa_id: tx.programa_id,
         titulo_obtenido: tx.titulo_obtenido,
+        fecha_inicio: tx.fecha_inicio, // <- Agregamos el nuevo campo
         fecha_fin: tx.fecha_fin,
         hash_actual: hashNuevo,
         hash_anterior: hashAnterior,
         nonce: nonce,
-        firmado_por: "Nodo_Local"
+        firmado_por: firma // <- Usamos la firma que llegó en el body
       }])
       .select();
 
-    if (insertError) {
-      throw insertError;
-    }
+    if (insertError) throw insertError;
+    transaccionesPendientes.shift(); 
 
-    // Limpia las transacción de la Mempool si ya fue minada con éxito
-    transaccionesPendientes.shift();
-
-    // Propaga el nuevo bloque a los demás nodos, anunca que lo encontró
+    // PROPAGACIÓN: Actualizamos la URL a /api/blocks/receive
     const bloqueGenerado = nuevoBloque[0];
     for (const url of Array.from(nodosRegistrados)) {
-      fetch(`${url}/api/blocks`, {
+      fetch(`${url}/api/blocks/receive`, { // <- CAMBIO DE RUTA AQUÍ
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(bloqueGenerado)
@@ -75,10 +74,10 @@ export async function POST() {
 
     return NextResponse.json({
       mensaje: '¡Bloque minado con éxito!',
-      bloque: nuevoBloque[0]
+      bloque: bloqueGenerado
     }, { status: 201 });
 
   } catch (error: any) {
-    return NextResponse.json({ error: 'Error al minar el bloque: ' + error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Error al minar: ' + error.message }, { status: 500 });
   }
 }

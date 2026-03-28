@@ -3,29 +3,32 @@
   "info": {
     "title": "API Nodo Blockchain",
     "version": "1.0.0",
-    "description": "Documentación del nodo local para la red blockchain distribuida."
+    "description": "Documentación del nodo local estandarizado para la red blockchain distribuida."
   },
   "paths": {
+    "/api/genesis": {
+      "post": {
+        "summary": "Crear el Bloque Génesis",
+        "description": "Crea el primer bloque de la cadena (Bloque 0) si la base de datos está vacía.",
+        "responses": {
+          "201": { "description": "Bloque génesis creado exitosamente." },
+          "400": { "description": "La cadena ya tiene bloques." }
+        }
+      }
+    },
     "/api/chain": {
       "get": {
         "summary": "Obtener la cadena de bloques",
-        "description": "Devuelve la cadena completa y su longitud.",
+        "description": "Devuelve la cadena completa y su longitud (estándar en inglés).",
         "responses": {
-          "200": { "description": "Cadena obtenida exitosamente" }
+          "200": { "description": "Cadena obtenida exitosamente." }
         }
       }
     },
     "/api/transactions": {
-      "get": {
-        "summary": "Ver transacciones pendientes",
-        "description": "Devuelve la lista de transacciones en la Mempool.",
-        "responses": {
-          "200": { "description": "Lista de transacciones" }
-        }
-      },
       "post": {
         "summary": "Crear nueva transacción",
-        "description": "Agrega un título académico a la Mempool.",
+        "description": "Agrega un título académico a la Mempool y lo propaga.",
         "requestBody": {
           "required": true,
           "content": {
@@ -37,14 +40,24 @@
                   "institucion_id": { "type": "string" },
                   "programa_id": { "type": "string" },
                   "titulo_obtenido": { "type": "string" },
-                  "fecha_fin": { "type": "string" }
+                  "fecha_inicio": { "type": "string", "example": "2019-08-01" },
+                  "fecha_fin": { "type": "string", "example": "2024-06-15" }
                 }
               }
             }
           }
         },
         "responses": {
-          "201": { "description": "Transacción agregada" }
+          "201": { "description": "Transacción agregada a la Mempool." }
+        }
+      }
+    },
+    "/api/transactions/pending": {
+      "get": {
+        "summary": "Ver transacciones pendientes",
+        "description": "Devuelve la lista de transacciones en la Mempool listas para ser minadas.",
+        "responses": {
+          "200": { "description": "Lista de transacciones pendientes." }
         }
       }
     },
@@ -52,23 +65,6 @@
       "post": {
         "summary": "Minar un bloque",
         "description": "Aplica Proof of Work a la primera transacción pendiente y crea un bloque.",
-        "responses": {
-          "201": { "description": "Bloque minado con éxito" },
-          "400": { "description": "No hay transacciones pendientes" }
-        }
-      }
-    },
-    "/api/nodes/register": {
-      "get": {
-        "summary": "Ver nodos registrados",
-        "description": "Devuelve la lista de nodos en la red local.",
-        "responses": {
-          "200": { "description": "Lista de nodos" }
-        }
-      },
-      "post": {
-        "summary": "Registrar un nodo",
-        "description": "Añade la URL de un compañero a la red.",
         "requestBody": {
           "required": true,
           "content": {
@@ -76,14 +72,56 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "nodoUrl": { "type": "string", "example": "http://100.85.44.12:8002" }
+                  "firmado_por": { "type": "string", "example": "nodo-nextjs-3000" }
                 }
               }
             }
           }
         },
         "responses": {
-          "201": { "description": "Nodo registrado" }
+          "201": { "description": "Bloque minado con éxito." },
+          "400": { "description": "No hay transacciones pendientes." }
+        }
+      }
+    },
+    "/api/blocks/receive": {
+      "post": {
+        "summary": "Recibir y validar bloque",
+        "description": "Recibe un bloque minado por otro nodo en la red y valida sus hashes antes de guardarlo.",
+        "responses": {
+          "201": { "description": "Bloque validado y añadido." },
+          "400": { "description": "Proof of Work o Hash inválido." }
+        }
+      }
+    },
+    "/api/nodes": {
+      "get": {
+        "summary": "Ver nodos registrados",
+        "description": "Devuelve la lista de URLs de los demás nodos en la red.",
+        "responses": {
+          "200": { "description": "Lista de nodos." }
+        }
+      }
+    },
+    "/api/nodes/register": {
+      "post": {
+        "summary": "Registrar un nodo",
+        "description": "Añade la URL de un compañero a la red de confianza.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "url": { "type": "string", "example": "https://tu-ngrok-url.app" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Nodo registrado." }
         }
       }
     },
@@ -92,7 +130,7 @@
         "summary": "Resolver conflictos (Consenso)",
         "description": "Consulta a los demás nodos y adopta la cadena más larga.",
         "responses": {
-          "200": { "description": "Conflictos resueltos o cadena sincronizada" }
+          "200": { "description": "Conflictos resueltos o cadena sincronizada." }
         }
       }
     }

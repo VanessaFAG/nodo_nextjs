@@ -1,14 +1,14 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '../../../src/lib/supabase';
-import { calcularHash } from '../../../src/lib/blockchain';
+import { supabase } from '../../../../src/lib/supabase';
+import { calcularHash } from '../../../../src/lib/blockchain';
 
 // POST: Recibe un bloque minado por otro nodo y lo valida
 export async function POST(request: Request) {
   try {
     const bloqueEntrante = await request.json();
 
-    // Validar el Proof of Work, valida que inicie con dos ceros
-    if (!bloqueEntrante.hash_actual.startsWith('00')) {
+    // Validar el Proof of Work, valida que inicie con tres ceros
+   if (!bloqueEntrante.hash_actual.startsWith('000')) {
       return NextResponse.json({ error: 'Proof of Work inválido. Bloque rechazado.' }, { status: 400 });
     }
 
