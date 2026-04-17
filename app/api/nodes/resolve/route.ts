@@ -16,10 +16,24 @@ export async function GET() {
 
     for (const url of Array.from(nodosRegistrados)) {
       try {
-        const response = await fetch(`${url}/api/chain`);
+        // Limpiamos la URL por si se guardó con una diagonal al final
+        const baseUrl = url.replace(/\/$/, "");
+
+        // 1. Intentamos la ruta de Express/Flask (sin api)
+        let response = await fetch(`${baseUrl}/chain`);
+
+        // 2. Si no la encuentra (404), intentamos la ruta de Laravel/NextJS (con api)
+        if (!response.ok) {
+          response = await fetch(`${baseUrl}/api/chain`);
+        }
+
+        // Si el compañero sigue sin responder bien, lo saltamos sin romper nada
+        if (!response.ok) continue;
+
         const nodeData = await response.json();
 
-        if (nodeData.length > maxLongitud) {
+        // Validamos que los datos vengan bien formados
+        if (nodeData && typeof nodeData.length === 'number' && nodeData.length > maxLongitud) {
           maxLongitud = nodeData.length;
           nuevaCadena = nodeData.chain;
         }
@@ -29,6 +43,7 @@ export async function GET() {
     }
 
     if (nuevaCadena) {
+      // Borramos toda la cadena local para poner la ganadora
       const { error: deleteError } = await supabase
         .from('grados')
         .delete()
@@ -36,6 +51,7 @@ export async function GET() {
 
       if (deleteError) throw deleteError;
 
+      // Insertamos la nueva cadena
       const { error: insertError } = await supabase
         .from('grados')
         .insert(nuevaCadena);
