@@ -53,7 +53,7 @@ export async function GET() {
                       : bloque;
 
         return {
-          // Solo extraemos nuestras columnas. se ignorará el 'id' por completo, ya que supabase los genera
+          id: crypto.randomUUID(), 
           persona_id: datos.persona_id || 0,
           institucion_id: datos.institucion_id || 0,
           programa_id: datos.programa_id || 0,
@@ -67,7 +67,6 @@ export async function GET() {
         };
       });
 
-      // Insertamos la cadena limpia
       const { error: insertError } = await supabase
         .from('grados')
         .insert(cadenaFormateada);
