@@ -46,24 +46,28 @@ export async function GET() {
 
       if (deleteError) throw deleteError;
 
-      // Insertamos la nueva cadena y traductor (Acomodamos los datos dependiendo de quién minó el bloque)
+      // Insertamos la nueva cadena y traductor 
       const cadenaFormateada = nuevaCadena.map((bloque: any) => {
-        if (bloque.datos_grado) {
-          return {
-            persona_id: bloque.datos_grado.persona_id,
-            institucion_id: bloque.datos_grado.institucion_id,
-            programa_id: bloque.datos_grado.programa_id,
-            titulo_obtenido: bloque.datos_grado.titulo_obtenido,
-            fecha_inicio: bloque.datos_grado.fecha_inicio || null,
-            fecha_fin: bloque.datos_grado.fecha_fin,
-            hash_actual: bloque.hash_actual,
-            hash_anterior: bloque.hash_anterior,
-            nonce: bloque.nonce,
-            firmado_por: bloque.firmado_por || "desconocido"
-          };
-        }
-        return bloque;
+        const datos = (bloque.datos_grado && typeof bloque.datos_grado === 'object') 
+                      ? bloque.datos_grado 
+                      : bloque;
+
+        return {
+          // Solo extraemos nuestras columnas. se ignorará el 'id' por completo, ya que supabase los genera
+          persona_id: datos.persona_id || 0,
+          institucion_id: datos.institucion_id || 0,
+          programa_id: datos.programa_id || 0,
+          titulo_obtenido: datos.titulo_obtenido || "Bloque Génesis",
+          fecha_inicio: datos.fecha_inicio || null,
+          fecha_fin: datos.fecha_fin || "2000-01-01",
+          hash_actual: bloque.hash_actual || "hash_falso",
+          hash_anterior: bloque.hash_anterior || "0",
+          nonce: bloque.nonce || 0,
+          firmado_por: bloque.firmado_por || "desconocido"
+        };
       });
+
+      // Insertamos la cadena limpia
       const { error: insertError } = await supabase
         .from('grados')
         .insert(cadenaFormateada);
