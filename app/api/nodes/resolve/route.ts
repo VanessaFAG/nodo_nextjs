@@ -16,18 +16,13 @@ export async function GET() {
 
     for (const url of Array.from(nodosRegistrados)) {
       try {
-        // Limpiamos la URL por si se guardó con una diagonal al final
         const baseUrl = url.replace(/\/$/, "");
 
-        // 1. Intentamos la ruta de Express/Flask (sin api)
         let response = await fetch(`${baseUrl}/chain`);
 
-        // 2. Si no la encuentra (404), intentamos la ruta de Laravel/NextJS (con api)
         if (!response.ok) {
           response = await fetch(`${baseUrl}/api/chain`);
         }
-
-        // Si el compañero sigue sin responder bien, lo saltamos sin romper nada
         if (!response.ok) continue;
 
         const nodeData = await response.json();
@@ -51,10 +46,27 @@ export async function GET() {
 
       if (deleteError) throw deleteError;
 
-      // Insertamos la nueva cadena
+      // Insertamos la nueva cadena y traductor (Acomodamos los datos dependiendo de quién minó el bloque)
+      const cadenaFormateada = nuevaCadena.map((bloque: any) => {
+        if (bloque.datos_grado) {
+          return {
+            persona_id: bloque.datos_grado.persona_id,
+            institucion_id: bloque.datos_grado.institucion_id,
+            programa_id: bloque.datos_grado.programa_id,
+            titulo_obtenido: bloque.datos_grado.titulo_obtenido,
+            fecha_inicio: bloque.datos_grado.fecha_inicio || null,
+            fecha_fin: bloque.datos_grado.fecha_fin,
+            hash_actual: bloque.hash_actual,
+            hash_anterior: bloque.hash_anterior,
+            nonce: bloque.nonce,
+            firmado_por: bloque.firmado_por || "desconocido"
+          };
+        }
+        return bloque;
+      });
       const { error: insertError } = await supabase
         .from('grados')
-        .insert(nuevaCadena);
+        .insert(cadenaFormateada);
 
       if (insertError) throw insertError;
 
