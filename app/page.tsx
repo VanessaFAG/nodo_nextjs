@@ -25,7 +25,7 @@ export default function NodoDashboard() {
     try {
       const resChain = await fetch("/api/chain");
       const dataChain = await resChain.json();
-      setCadena(dataChain.cadena || []);
+      setCadena(dataChain.chain || []); // <- XD puse "cadena" en ves de "chain" XD
 
       const resMempool = await fetch("/api/transactions");
       const dataMempool = await resMempool.json();
